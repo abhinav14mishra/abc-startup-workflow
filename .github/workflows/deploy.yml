@@ -1,36 +1,30 @@
-name: Deploy ABC Startup Infrastructure
+name: Destroy ABC Startup Infrastructure
 
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:   # Manual trigger
 
 permissions:
-  id-token: write        # Required for OIDC
+  id-token: write      # Required for OIDC
   contents: read
 
 jobs:
-  deploy:
+  destroy:
     runs-on: ubuntu-latest
 
     steps:
-      # Checkout repository code
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # Authenticate to AWS using OIDC
       - name: Configure AWS Credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::165742852730:role/GitHubActions-IaC-Deployer
           aws-region: ap-south-1
 
-      # Install Terraform
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
-      # Deploy infrastructure
-      - name: Terraform Init & Apply
+      - name: Terraform Destroy
         run: |
           terraform init
-          terraform apply -auto-approve
+          terraform destroy -auto-approve
