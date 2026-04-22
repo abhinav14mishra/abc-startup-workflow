@@ -1,0 +1,28 @@
+name: AWS OIDC Connection Test
+
+on:
+  push:
+    branches: [ main ]
+
+permissions:
+  id-token: write   # MANDATORY: Allows the runner to request the OIDC token
+  contents: read    # MANDATORY: Allows the runner to read your code
+
+jobs:
+  VerifyOIDC:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          # Use your exact Account ID and Role Name
+          role-to-assume: arn:aws:iam::165742852730:role/GitHubActions-IaC-Deployer
+          aws-region: ap-south-1
+
+      - name: Test Connection
+        run: |
+          echo "Successfully assumed the IAM Role!"
+          aws sts get-caller-identity
