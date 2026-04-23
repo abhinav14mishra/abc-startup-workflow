@@ -1,20 +1,23 @@
-# -------------------------------
-# VPC: Private network boundary
-# -------------------------------
+#############################################
+# network.tf
+#
+# PURPOSE:
+# - Provide isolated networking for EC2 and ECS
+# - Enable internet access for image pulls
+#############################################
+
+# VPC
 resource "aws_vpc" "main" {
   cidr_block           = var.vpc_cidr
-  enable_dns_hostnames = true
   enable_dns_support   = true
+  enable_dns_hostnames = true
 
   tags = {
     Name = "${var.project_name}-vpc"
   }
 }
 
-# -------------------------------
 # Internet Gateway
-# Required for ECS image pulls
-# -------------------------------
 resource "aws_internet_gateway" "igw" {
   vpc_id = aws_vpc.main.id
 
@@ -23,9 +26,7 @@ resource "aws_internet_gateway" "igw" {
   }
 }
 
-# -------------------------------
-# Public Subnet for EC2 & ECS
-# -------------------------------
+# Public Subnet
 resource "aws_subnet" "main" {
   vpc_id                  = aws_vpc.main.id
   cidr_block              = var.subnet_cidr
@@ -36,9 +37,7 @@ resource "aws_subnet" "main" {
   }
 }
 
-# -------------------------------
-# Route Table: Internet access
-# -------------------------------
+# Route Table
 resource "aws_route_table" "public" {
   vpc_id = aws_vpc.main.id
 
@@ -52,18 +51,17 @@ resource "aws_route_table" "public" {
   }
 }
 
+# Route Table Association
 resource "aws_route_table_association" "public_assoc" {
   subnet_id      = aws_subnet.main.id
   route_table_id = aws_route_table.public.id
 }
 
-# -------------------------------
 # Security Group
-# -------------------------------
 resource "aws_security_group" "main" {
   vpc_id = aws_vpc.main.id
 
-  # Internal-only traffic
+  # Allow internal VPC traffic
   ingress {
     from_port   = 0
     to_port     = 0
@@ -71,7 +69,7 @@ resource "aws_security_group" "main" {
     cidr_blocks = [var.vpc_cidr]
   }
 
-  # Allow outbound internet
+  # Allow outbound traffic to internet
   egress {
     from_port   = 0
     to_port     = 0

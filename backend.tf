@@ -1,22 +1,37 @@
-############################################
+#############################################
 # backend.tf
 #
 # PURPOSE:
-# - Store terraform.tfstate in S3
-# - Enable state locking via S3 lock file
-# - Share state across GitHub Actions & VM
-############################################
+# - Store Terraform state (terraform.tfstate)
+#   in a remote S3 backend
+# - Enable safe concurrent execution using
+#   S3-based state locking (Terraform ≥ 1.5)
+# - Ensure the same state is shared across:
+#     • GitHub Actions
+#     • Virtual Machines
+#     • Local development
+#
+# IMPORTANT:
+# - This S3 bucket must be created manually
+# - This bucket must NOT be managed by Terraform
+#############################################
 
 terraform {
   backend "s3" {
+    # Dedicated S3 bucket for Terraform state
     bucket = "abc-startup-terraform-state"
-    key    = "abc-startup/terraform.tfstate"
+
+    # Path inside the bucket where state is stored
+    key = "abc-startup/terraform.tfstate"
+
+    # AWS region where the state bucket exists
     region = "ap-south-1"
 
-    # Encrypt state at rest
+    # Encrypt state data at rest
     encrypt = true
 
-    # Modern Terraform locking (>= 1.5)
+    # Use modern S3-native state locking (Terraform >= 1.5)
+    # Prevents concurrent apply/destroy corruption
     use_lockfile = true
   }
 }
