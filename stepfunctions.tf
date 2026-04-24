@@ -3,8 +3,7 @@
 #
 # PURPOSE:
 # - Coordinate preprocessing and processing stages
-# - Enforce EC2 health validation before ECS execution
-# - Retry validation until EC2 becomes healthy
+# - Allow ECS execution when EC2 is running
 #############################################
 
 resource "aws_sfn_state_machine" "workflow" {
@@ -24,8 +23,7 @@ resource "aws_sfn_state_machine" "workflow" {
       ##################################
       # DescribeEC2
       #
-      # Retrieves EC2 instance state and
-      # health check information
+      # Retrieves EC2 instance state
       ##################################
       DescribeEC2 = {
         Type     = "Task"
@@ -43,42 +41,19 @@ resource "aws_sfn_state_machine" "workflow" {
       ##################################
       # ValidateEC2
       #
-      # Verifies EC2 readiness conditions
+      # Checks only whether the EC2
+      # instance is in running state
       ##################################
       ValidateEC2 = {
         Type = "Choice"
 
         Choices = [{
-          And = [
-            {
-              Variable     = "$.ec2.InstanceStatuses[0].InstanceState.Name"
-              StringEquals = "running"
-            },
-            {
-              Variable     = "$.ec2.InstanceStatuses[0].SystemStatus.Status"
-              StringEquals = "ok"
-            },
-            {
-              Variable     = "$.ec2.InstanceStatuses[0].InstanceStatus.Status"
-              StringEquals = "ok"
-            }
-          ]
-          Next = "RunECSTask"
+          Variable     = "$.ec2.InstanceStatuses[0].InstanceState.Name"
+          StringEquals = "running"
+          Next         = "RunECSTask"
         }]
 
-        # EC2 not ready yet → wait and retry
-        Default = "WaitForEC2"
-      }
-
-      ##################################
-      # WaitForEC2
-      #
-      # Allows EC2 health checks to complete
-      ##################################
-      WaitForEC2 = {
-        Type    = "Wait"
-        Seconds = 45
-        Next    = "DescribeEC2"
+        Default = "EC2NotRunning"
       }
 
       ##################################
@@ -105,6 +80,18 @@ resource "aws_sfn_state_machine" "workflow" {
         }
 
         End = true
+      }
+
+      ##################################
+      # EC2NotRunning
+      #
+      # Terminates workflow if EC2
+      # is not in running state
+      ##################################
+      EC2NotRunning = {
+        Type  = "Fail"
+        Error = "EC2NotRunning"
+        Cause = "EC2 instance is not in running state"
       }
     }
   })
