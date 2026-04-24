@@ -4,26 +4,19 @@
 # PURPOSE:
 # - Coordinate preprocessing and processing stages
 # - Enforce EC2 health validation before ECS execution
+# - Retry validation until EC2 becomes healthy
 #############################################
 
 resource "aws_sfn_state_machine" "workflow" {
-  # Name of the Step Functions state machine
-  name = var.step_function_name
-
-  # IAM role assumed during workflow execution
-  # Must allow EC2 describe, ECS runTask, and iam:PassRole
+  name     = var.step_function_name
   role_arn = var.iam_role_arn
 
-  # Ensure required compute resources exist
   depends_on = [
     aws_instance.preprocess,
     aws_ecs_task_definition.processor
   ]
 
-  # State machine definition (Amazon States Language)
   definition = jsonencode({
-
-    # Initial state
     StartAt = "DescribeEC2"
 
     States = {
@@ -31,19 +24,18 @@ resource "aws_sfn_state_machine" "workflow" {
       ##################################
       # DescribeEC2
       #
-      # Fetches EC2 instance state and
-      # system/instance health status
+      # Retrieves EC2 instance state and
+      # health check information
       ##################################
       DescribeEC2 = {
         Type     = "Task"
         Resource = "arn:aws:states:::aws-sdk:ec2:describeInstanceStatus"
 
         Parameters = {
-          InstanceIds          = [aws_instance.preprocess.id]
-          IncludeAllInstances  = true
+          InstanceIds         = [aws_instance.preprocess.id]
+          IncludeAllInstances = true
         }
 
-        # Persist EC2 status response
         ResultPath = "$.ec2"
         Next       = "ValidateEC2"
       }
@@ -51,7 +43,7 @@ resource "aws_sfn_state_machine" "workflow" {
       ##################################
       # ValidateEC2
       #
-      # Evaluates EC2 readiness conditions
+      # Verifies EC2 readiness conditions
       ##################################
       ValidateEC2 = {
         Type = "Choice"
@@ -74,15 +66,25 @@ resource "aws_sfn_state_machine" "workflow" {
           Next = "RunECSTask"
         }]
 
-        # Fail execution if validation criteria are not met
-        Default = "EC2ValidationFailed"
+        # EC2 not ready yet → wait and retry
+        Default = "WaitForEC2"
+      }
+
+      ##################################
+      # WaitForEC2
+      #
+      # Allows EC2 health checks to complete
+      ##################################
+      WaitForEC2 = {
+        Type    = "Wait"
+        Seconds = 45
+        Next    = "DescribeEC2"
       }
 
       ##################################
       # RunECSTask
       #
-      # Executes ECS Fargate task and
-      # waits for completion
+      # Executes ECS Fargate batch task
       ##################################
       RunECSTask = {
         Type     = "Task"
@@ -103,18 +105,6 @@ resource "aws_sfn_state_machine" "workflow" {
         }
 
         End = true
-      }
-
-      ##################################
-      # EC2ValidationFailed
-      #
-      # Terminates workflow on failed
-      # EC2 health validation
-      ##################################
-      EC2ValidationFailed = {
-        Type  = "Fail"
-        Error = "EC2NotHealthy"
-        Cause = "EC2 instance failed required health checks"
       }
     }
   })
