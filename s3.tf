@@ -2,42 +2,30 @@
 # s3.tf
 #
 # PURPOSE:
-# - Application S3 bucket for transaction files
-# - Triggers Step Functions on object upload
+# - Provide S3 bucket for transaction input
+# - Initiate workflow execution on object upload
 #############################################
 
-# ----------------------------------------
-# S3 Bucket for transaction uploads
-# ----------------------------------------
+# S3 bucket used as the workflow entry point
 resource "aws_s3_bucket" "transactions" {
-  # Bucket used as the entry point for the workflow
-  bucket        = var.s3_bucket_name
+  # Globally unique bucket name
+  bucket = var.s3_bucket_name
 
-  # Allow Terraform destroy without manual cleanup
+  # Allow full cleanup during Terraform destroy
   force_destroy = true
 }
 
-# ----------------------------------------
-# Enable EventBridge notifications for S3
-#
-# NOTE:
-# - This allows S3 events to be sent to EventBridge
-# - No Lambda or custom notification required
-# ----------------------------------------
+# Enable S3 to send events to EventBridge
 resource "aws_s3_bucket_notification" "eventbridge" {
   bucket      = aws_s3_bucket.transactions.id
   eventbridge = true
 }
 
-# ----------------------------------------
-# EventBridge Rule
-#
-# Triggers when an object is uploaded to the
-# transaction S3 bucket
-# ----------------------------------------
+# EventBridge rule for S3 object creation events
 resource "aws_cloudwatch_event_rule" "s3_trigger" {
   name = "${var.project_name}-s3-trigger"
 
+  # Match object creation events for the target bucket
   event_pattern = jsonencode({
     source      = ["aws.s3"]
     detail-type = ["Object Created"]
@@ -51,12 +39,7 @@ resource "aws_cloudwatch_event_rule" "s3_trigger" {
   })
 }
 
-# ----------------------------------------
-# EventBridge Target
-#
-# Starts the Step Functions workflow
-# using the single shared IAM role
-# ----------------------------------------
+# EventBridge target to start the Step Functions workflow
 resource "aws_cloudwatch_event_target" "stepfunction_target" {
   rule      = aws_cloudwatch_event_rule.s3_trigger.name
   target_id = "StartStepFunction"
@@ -64,6 +47,6 @@ resource "aws_cloudwatch_event_target" "stepfunction_target" {
   # Step Functions state machine ARN
   arn = aws_sfn_state_machine.workflow.arn
 
-  # Single IAM role reused across services
+  # IAM role used by EventBridge to invoke Step Functions
   role_arn = var.iam_role_arn
 }

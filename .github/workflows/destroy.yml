@@ -2,7 +2,7 @@ name: Destroy ABC Startup Infrastructure
 
 # ----------------------------------------
 # MANUAL trigger only
-# Destructive action – never auto-run
+# Destructive action – never automated
 # ----------------------------------------
 on:
   workflow_dispatch:
@@ -18,14 +18,13 @@ jobs:
 
     steps:
       # -----------------------------------
-      # Checkout repository code
+      # Checkout repository
       # -----------------------------------
       - name: Checkout repository
         uses: actions/checkout@v4
 
       # -----------------------------------
       # Authenticate to AWS using OIDC
-      # Uses the same single IAM role
       # -----------------------------------
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
@@ -40,7 +39,7 @@ jobs:
         uses: hashicorp/setup-terraform@v3
 
       # -----------------------------------
-      # Initialize backend and destroy infra
+      # Destroy infrastructure
       # -----------------------------------
       - name: Terraform Destroy
         run: |

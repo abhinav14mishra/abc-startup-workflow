@@ -2,9 +2,8 @@
 # variables.tf
 #
 # PURPOSE:
-# - Central definition for all configurable
-#   inputs used across the infrastructure
-# - Keeps values consistent and reusable
+# - Central definition for all configurable inputs
+# - Ensures consistency across environments
 #############################################
 
 # ------------------------
@@ -17,82 +16,73 @@ variable "aws_region" {
   default = "ap-south-1"
 }
 
-# Common prefix used for naming and tagging
+# Common prefix for naming and tagging resources
 variable "project_name" {
   type    = string
   default = "abc-startup"
 }
 
 # ------------------------
-# Networking
+# Networking configuration
 # ------------------------
 
-# CIDR range for the VPC
+# CIDR block for the VPC
 variable "vpc_cidr" {
   type    = string
   default = "10.0.0.0/16"
 }
 
-# CIDR range for the public subnet
+# CIDR block for the public subnet
 variable "subnet_cidr" {
   type    = string
   default = "10.0.1.0/24"
 }
 
 # ------------------------
-# EC2 (Pre-processing step)
+# EC2 (Pre-processing)
 # ------------------------
 
-# AMI used for the pre-processing EC2 instance
+# AMI ID for EC2 preprocess instance
 variable "ec2_ami" {
   type    = string
   default = "ami-05d2d839d4f73aafb"
 }
 
-# Instance size for EC2 (kept small for cost efficiency)
+# EC2 instance type
 variable "ec2_instance_type" {
   type    = string
   default = "t3.micro"
 }
 
 # ------------------------
-# ECS (Processing step)
+# ECS (Processing)
 # ------------------------
 
-# Name of the ECS cluster
 variable "ecs_cluster_name" {
   type    = string
   default = "abc-startup-cluster"
 }
 
-# CPU units assigned to the ECS task
 variable "ecs_task_cpu" {
   type    = string
   default = "256"
 }
 
-# Memory (MiB) assigned to the ECS task
 variable "ecs_task_memory" {
   type    = string
   default = "512"
 }
 
-# Container image used by ECS (public ECR, stable tag)
 variable "ecs_container_image" {
   type    = string
   default = "public.ecr.aws/nginx/nginx:stable"
 }
 
 # ------------------------
-# IAM (Single role reused everywhere)
+# IAM
 # ------------------------
 
-# One IAM role reused by:
-# - GitHub Actions
-# - EC2 instance
-# - ECS task
-# - Step Functions
-# - EventBridge
+# Single IAM role reused across all services
 variable "iam_role_arn" {
   type    = string
   default = "arn:aws:iam::165742852730:role/GitHubActions-IaC-Deployer"
@@ -102,18 +92,15 @@ variable "iam_role_arn" {
 # Step Functions
 # ------------------------
 
-# Name of the Step Functions state machine
 variable "step_function_name" {
   type    = string
   default = "abc-startup-workflow"
 }
 
 # ------------------------
-# S3 (Transaction input)
+# S3
 # ------------------------
 
-# Application S3 bucket used for data uploads
-# NOTE: Must be globally unique
 variable "s3_bucket_name" {
   type        = string
   default     = "2472737-usecase-bucket"

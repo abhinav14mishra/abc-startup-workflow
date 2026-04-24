@@ -2,32 +2,30 @@
 # ec2.tf
 #
 # PURPOSE:
-# - EC2 instance representing the
-#   "pre-processing" step in the workflow
-# - Validated by Step Functions before
-#   running ECS processing tasks
+# - Provision EC2 instance used for
+#   preprocessing in the workflow
+# - Acts as a prerequisite for ECS execution
 #############################################
 
 resource "aws_instance" "preprocess" {
-  # Amazon Machine Image for the instance
+  # AMI defining the base operating system
   ami = var.ec2_ami
 
-  # Instance size kept small for cost efficiency
+  # Instance size selected for low-cost workloads
   instance_type = var.ec2_instance_type
 
-  # Place EC2 in the application subnet
+  # Deploy instance into application subnet
   subnet_id = aws_subnet.main.id
 
-  # Attach security group for internal VPC access
+  # Security group controlling network access
   vpc_security_group_ids = [
     aws_security_group.main.id
   ]
 
-  # Attach the single shared IAM role
-  # NOTE: EC2 requires an instance profile
+  # Instance profile required to attach IAM role to EC2
   iam_instance_profile = aws_iam_instance_profile.ec2_profile.name
 
-  # Resource tagging for identification
+  # Resource identification tag
   tags = {
     Name = "${var.project_name}-preprocess-ec2"
   }

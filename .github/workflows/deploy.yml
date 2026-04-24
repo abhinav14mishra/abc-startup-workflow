@@ -2,7 +2,7 @@ name: Deploy ABC Startup Infrastructure
 
 # ----------------------------------------
 # MANUAL trigger only
-# Prevents accidental deployments on push
+# Prevents accidental deployments
 # ----------------------------------------
 on:
   workflow_dispatch:
@@ -19,14 +19,13 @@ jobs:
 
     steps:
       # -----------------------------------
-      # Checkout repository code
+      # Checkout repository
       # -----------------------------------
       - name: Checkout repository
         uses: actions/checkout@v4
 
       # -----------------------------------
       # Authenticate to AWS using OIDC
-      # Assumes a single shared IAM role
       # -----------------------------------
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
@@ -41,8 +40,7 @@ jobs:
         uses: hashicorp/setup-terraform@v3
 
       # -----------------------------------
-      # Initialize backend and apply config
-      # Uses S3 backend + lock file
+      # Initialize backend and apply infra
       # -----------------------------------
       - name: Terraform Init & Apply
         run: |

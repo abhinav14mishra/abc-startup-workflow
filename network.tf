@@ -2,13 +2,16 @@
 # network.tf
 #
 # PURPOSE:
-# - Provide isolated networking for EC2 and ECS
-# - Enable internet access for image pulls
+# - Provide networking foundation for compute resources
+# - Enable controlled outbound internet access
 #############################################
 
-# VPC
+# Virtual Private Cloud (VPC)
 resource "aws_vpc" "main" {
-  cidr_block           = var.vpc_cidr
+  # Primary CIDR block for the environment
+  cidr_block = var.vpc_cidr
+
+  # Required for DNS resolution and service discovery
   enable_dns_support   = true
   enable_dns_hostnames = true
 
@@ -19,6 +22,7 @@ resource "aws_vpc" "main" {
 
 # Internet Gateway
 resource "aws_internet_gateway" "igw" {
+  # Attach gateway to the VPC
   vpc_id = aws_vpc.main.id
 
   tags = {
@@ -26,10 +30,15 @@ resource "aws_internet_gateway" "igw" {
   }
 }
 
-# Public Subnet
+# Public subnet
 resource "aws_subnet" "main" {
-  vpc_id                  = aws_vpc.main.id
-  cidr_block              = var.subnet_cidr
+  # Associate subnet with the VPC
+  vpc_id = aws_vpc.main.id
+
+  # CIDR block allocated to the subnet
+  cidr_block = var.subnet_cidr
+
+  # Automatically assign public IPs to launched resources
   map_public_ip_on_launch = true
 
   tags = {
@@ -37,10 +46,11 @@ resource "aws_subnet" "main" {
   }
 }
 
-# Route Table
+# Route table for public access
 resource "aws_route_table" "public" {
   vpc_id = aws_vpc.main.id
 
+  # Default route to the internet
   route {
     cidr_block = "0.0.0.0/0"
     gateway_id = aws_internet_gateway.igw.id
@@ -51,17 +61,17 @@ resource "aws_route_table" "public" {
   }
 }
 
-# Route Table Association
+# Associate route table with public subnet
 resource "aws_route_table_association" "public_assoc" {
   subnet_id      = aws_subnet.main.id
   route_table_id = aws_route_table.public.id
 }
 
-# Security Group
+# Security group for application resources
 resource "aws_security_group" "main" {
   vpc_id = aws_vpc.main.id
 
-  # Allow internal VPC traffic
+  # Allow unrestricted traffic within the VPC
   ingress {
     from_port   = 0
     to_port     = 0
@@ -69,7 +79,7 @@ resource "aws_security_group" "main" {
     cidr_blocks = [var.vpc_cidr]
   }
 
-  # Allow outbound traffic to internet
+  # Allow unrestricted outbound access
   egress {
     from_port   = 0
     to_port     = 0

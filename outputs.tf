@@ -2,62 +2,70 @@
 # outputs.tf
 #
 # PURPOSE:
-# - Expose useful resource identifiers
-# - Helps with validation, debugging, and reuse
+# - Export key resource identifiers
+# - Support validation, integration, and reuse
 #############################################
 
 # ------------------------
-# Networking outputs
+# Networking
 # ------------------------
 
+# VPC identifier
 output "vpc_id" {
-  description = "ID of the VPC"
+  description = "VPC ID"
   value       = aws_vpc.main.id
 }
 
+# Subnet identifier
 output "subnet_id" {
-  description = "ID of the public subnet"
+  description = "Public subnet ID"
   value       = aws_subnet.main.id
 }
 
+# Security group identifier
 output "security_group_id" {
-  description = "Security group ID used by EC2 and ECS"
+  description = "Security group ID"
   value       = aws_security_group.main.id
 }
 
 # ------------------------
-# Compute outputs
+# Compute
 # ------------------------
 
+# EC2 preprocess instance identifier
 output "ec2_instance_id" {
-  description = "EC2 instance ID for pre-processing step"
+  description = "Preprocessing EC2 instance ID"
   value       = aws_instance.preprocess.id
 }
 
+# ECS cluster identifier
 output "ecs_cluster_arn" {
   description = "ECS cluster ARN"
   value       = aws_ecs_cluster.main.arn
 }
 
+# ECS task definition identifier
 output "ecs_task_definition_arn" {
   description = "ECS task definition ARN"
   value       = aws_ecs_task_definition.processor.arn
 }
 
 # ------------------------
-# Orchestration outputs
+# Orchestration
 # ------------------------
 
+# Step Functions state machine identifier
 output "step_function_arn" {
   description = "Step Functions state machine ARN"
   value       = aws_sfn_state_machine.workflow.arn
 }
 
 # ------------------------
-# Storage outputs
+# Storage
 # ------------------------
 
+# S3 bucket used as workflow input
 output "s3_bucket_name" {
-  description = "S3 bucket used for transaction uploads"
+  description = "Transaction input S3 bucket name"
   value       = aws_s3_bucket.transactions.bucket
 }
