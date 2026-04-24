@@ -9,22 +9,32 @@ This repository contains the complete Infrastructure as Code (IaC) and orchestra
 
 The system transitions from an idle state to active execution only upon data ingress. It utilizes a **synchronized state machine** to gate processing based on infrastructure availability.
 
-```text
-[ GitHub ] --(OIDC Authentication)--> [ GitHub Actions ] --(Terraform)--> [ AWS Environment ]
-                                                                                |
-                                                                                |
-      +-------------------------------------------------------------------------+
-      | AWS VPC (Virtual Private Cloud)                                         |
-      |                                                                         |
-      |  [ S3 Bucket ] ---> [ EventBridge ] ---> [ Step Functions (Orchestrator) ]
-      |      (Input)        (Event Bus)                 |                       |
-      |                                                 |                       |
-      |                                       (Step 1: Status Check)   (Step 2: Execution)
-      |                                                 v                       v
-      |                                         [ EC2 Instance ]        [ ECS Fargate Task ]
-      |                                          (Dependency)             (Batch Logic)
-      +-------------------------------------------------------------------------+
-```
+[ GitHub ]
+    |
+    | (OIDC Authentication)
+    v
+[ GitHub Actions ]
+    |
+    | (Terraform)
+    v
+[ AWS Environment ]
+    |
+    +------------------------------------------------------------------------------+
+    | AWS VPC (Virtual Private Cloud)                                              |
+    |                                                                              |
+    |   [ S3 Bucket ] --> [ EventBridge ] --> [ Step Functions ]                   |
+    |     (Input)          (Event Bus)        (Orchestrator)                       |
+    |                                             |                                |
+    |                          +------------------+------------------+             |
+    |                          |                                     |             |
+    |              (Step 1: Status Check)                (Step 2: Execution)       |
+    |                          |                                     |             |
+    |                          v                                     v             |
+    |                   [ EC2 Instance ]                   [ ECS Fargate Task ]    |
+    |                    (Dependency)                        (Batch Logic)         |
+    |                                                                              |
+    +------------------------------------------------------------------------------+
+
 
 ---
 
